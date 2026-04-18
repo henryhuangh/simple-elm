@@ -2,6 +2,9 @@
 
 A small Python library for working with ELM327 OBD/CAN adapters over serial.
 
+## Connect to ELM327 device
+The device I used was a ELM327 device by Veepeak, which can be sourced from [amazon](https://a.co/d/0aZCQ6Mv). You will need to connect this to your OBD port, typically under the steering wheel of your car. Open up your laptop and connect to the ELM327 device over bluetooth.
+
 ## Install locally
 
 ```bash
@@ -9,11 +12,11 @@ pip install -e .
 ```
 
 ## Usage
-
+Select the COM port (in windows) the baudrate is typically set at 38400
 ```python
 from simple_elm import ELM327, OBDPid
 
-with ELM327(port="/dev/tty.usbserial", baudrate=38400, timeout=1.0) as elm:
+with ELM327(port="COM9", baudrate=38400, timeout=1.0) as elm:
     elm.initialize(protocol=6, headers=True)
     rpm_response = elm.request_pid(OBDPid.ENGINE_RPM, header="7DF")
     print(rpm_response)
@@ -36,7 +39,7 @@ Use `request_pid` for typical OBD-II reads.
 ```python
 from simple_elm import ELM327, OBDPid
 
-with ELM327(port="/dev/tty.usbserial", baudrate=38400, timeout=1.0) as elm:
+with ELM327(port="COM9", baudrate=38400, timeout=1.0) as elm:
     elm.initialize(protocol=6, headers=True)
 
     # Request Mode 01 PID 0C (engine RPM) from functional header 7DF.
@@ -60,7 +63,7 @@ Use `send_can` when you want to explicitly set a header and send raw payload dat
 ```python
 from simple_elm import ELM327
 
-with ELM327(port="/dev/tty.usbserial", baudrate=38400, timeout=1.0) as elm:
+with ELM327(port="COM9", baudrate=38400, timeout=1.0) as elm:
     elm.initialize(protocol=6, headers=True)
 
     # Send 010C to ECU header 7E0.
@@ -79,7 +82,7 @@ the built-in thread-safe queue (`CANBuffer`).
 import time
 from simple_elm import ELM327
 
-with ELM327(port="/dev/tty.usbserial", baudrate=38400, timeout=1.0) as elm:
+with ELM327(port="COM9", baudrate=38400, timeout=1.0) as elm:
     elm.initialize(protocol=6, headers=True)
 
     buffer = elm.start_monitor_can_id("60D")
