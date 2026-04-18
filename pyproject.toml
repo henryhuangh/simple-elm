@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "simple-elm"
 version = "0.1.0"
-description = "Small ELM327 helper library for serial OBD/CAN adapters."
+description = "Small ELM327 library for serial OBD/CAN adapters."
 readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
