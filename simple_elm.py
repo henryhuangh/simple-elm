@@ -463,8 +463,6 @@ class ELM327:
         data = "".join(parts[1:]).upper()
         if not re.fullmatch(r"[0-9A-F]+", data):
             return None
-        if len(data) != 16:
-            return None
 
         return CANFrame(
             can_id=can_id,
