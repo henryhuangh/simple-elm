@@ -148,6 +148,7 @@ class ELM327:
         self.ser = serial.Serial(port, baudrate, timeout=timeout)
 
         self.current_header: Optional[str] = None
+        self.transmit_header: Optional[str] = None
         self.current_receive_filter: Optional[str] = None
 
         self._io_lock = threading.RLock()
@@ -278,10 +279,19 @@ class ELM327:
             lines = lines[1:]
         return "\n".join(lines).strip()
 
-    def _query(self, text: str, timeout: Optional[float] = None) -> str:
+    def _query(
+        self,
+        text: str,
+        timeout: Optional[float] = None,
+        wait_response: bool = True,
+    ) -> Optional[str]:
         with self._io_lock:
             self.flush_input()
             self._write_line(text)
+
+            if not wait_response:
+                return None
+
             raw = self._read_until_prompt(timeout=timeout)
             return self._clean_response(text, raw)
 
@@ -305,7 +315,7 @@ class ELM327:
         full = cleaned if cleaned.startswith("AT") else f"AT{cleaned}"
         return self._query(full)
 
-    def send_data(self, data: str, header: Optional[str] = None) -> str:
+    def send_data(self, data: str, header: Optional[str] = None, wait_response: bool = True) -> str:
         """
         Send raw diagnostic/CAN payload data and return the adapter response.
 
@@ -314,11 +324,11 @@ class ELM327:
         data_clean = self._validate_even_hex(data, "data")
         if header is not None:
             self.set_header(header)
-        return self._query(data_clean)
+        return self._query(data_clean, wait_response=wait_response)
 
-    def send_can(self, header: str, data: str) -> str:
+    def send_can(self, header: str, data: str, wait_response: bool = True) -> str:
         """Convenience wrapper to send data to a specific CAN header."""
-        return self.send_data(data=data, header=header)
+        return self.send_data(data=data, header=header, wait_response=wait_response)
 
     # ---------------------------------------------------------------------
     # PID requests
@@ -405,7 +415,13 @@ class ELM327:
     def set_header(self, header: str) -> str:
         header_clean = self._validate_hex(header, {3, 6, 8}, "header")
         self.current_header = header_clean
-        return self.send_at(f"{ELMKeyword.SET_HEADER.value}{header_clean}")
+
+        if self.transmit_header == header_clean:
+            return "OK"
+
+        response = self.send_at(f"{ELMKeyword.SET_HEADER.value}{header_clean}")
+        self.transmit_header = header_clean
+        return response
 
     def set_can_receive_filter(self, can_id: str) -> str:
         can_id_clean = self._validate_hex(can_id, {3, 8}, "CAN receive filter")
@@ -579,7 +595,7 @@ class ELM327:
 
 if __name__ == "__main__":
     # Minimal example usage.
-    with ELM327(port="COM9", baudrate=38400, timeout=1.0) as elm:
+    with ELM327(port="COM10", baudrate=38400, timeout=1.0) as elm:
         elm.initialize(protocol=6, headers=True)
 
         # Standard PID request.
